@@ -39,8 +39,11 @@ class StatsInfo():
         lstPktOffsetBytes = ByteCodec.int_to_bytes(self.lstPktOffset)
         prevAccPktsBytes = ByteCodec.int_to_bytes(self.prevAccPkts)
         currAccPktsBytes = ByteCodec.int_to_bytes(self.currAccPkts)
+        prevAccBytesBytes = ByteCodec.long_to_bytes(self.prevAccBytes)
+        currAccBytesBytes = ByteCodec.long_to_bytes(self.currAccBytes)
         errorPktsBytes = ByteCodec.short_to_bytes(self.errorPkts)
         dropPktsBytes = ByteCodec.short_to_bytes(self.dropPkts)
 
         return startupTimeBytes + fstPktArrTimeBytes + lstPktOffsetBytes + \
-               prevAccPktsBytes + currAccPktsBytes + errorPktsBytes + dropPktsBytes
+               prevAccBytesBytes + prevAccPktsBytes + currAccBytesBytes + \
+               currAccPktsBytes + errorPktsBytes + dropPktsBytes

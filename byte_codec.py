@@ -40,5 +40,5 @@ class ByteCodec(object):
     def mac_to_bytes(mac):
         macBytes = b''
         if mac:
-            macBytes = binascii.unhexlify(mac.replace(b':', b''))
+            macBytes = binascii.unhexlify(str.encode(mac).replace(b':', b''))
         return macBytes

@@ -18,6 +18,8 @@
 from stats_info import StatsInfo
 from byte_codec import ByteCodec
 
+from util import get_size
+
 class FlowInfo():
     flowType = b'\x00'
     deviceId = 0
