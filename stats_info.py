@@ -30,8 +30,8 @@ class StatsInfo():
     errorPkts = 0
     dropPkts = 0
     def __init__(self):
-        self.startupTime = int(time.time())
-        self.fstPktArrTime = int(time.time())
+        self.startupTime = int(round(time.time() * 1000))
+        self.fstPktArrTime = int(round(time.time() * 1000))
 
     def stats_info_to_bytes(self):
         startupTimeBytes = ByteCodec.long_to_bytes(self.startupTime)

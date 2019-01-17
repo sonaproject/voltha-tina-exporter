@@ -17,23 +17,27 @@
 import sys, binascii
 
 class ByteCodec(object):
+
+    byteorder='big'
+
     @staticmethod
     def short_to_bytes(short_val):
-        return short_val.to_bytes(2, sys.byteorder)
+        return short_val.to_bytes(2, ByteCodec.byteorder)
     
     @staticmethod
     def int_to_bytes(int_val):
-        return int_val.to_bytes(4, sys.byteorder)
+        return int_val.to_bytes(4, ByteCodec.byteorder)
 
     @staticmethod
     def long_to_bytes(long_val):
-        return long_val.to_bytes(8, sys.byteorder)
+        return long_val.to_bytes(8, ByteCodec.byteorder)
 
     @staticmethod
     def ip_to_bytes(ip):
         ipBytes = b''
         if ip:
             ipBytes = bytes(map(int, ip.split('.')))
+            # ipBytes = socket.inet_aton(ip)
         return ipBytes
 
     @staticmethod

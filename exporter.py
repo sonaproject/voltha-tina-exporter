@@ -15,9 +15,14 @@
  limitations under the License.
 '''
 
-import threading, logging, time
+import threading, time
 import multiprocessing
 import json
+
+import daemon
+from daemon import pidfile
+import logging
+from logging import handlers
 
 from kafka import KafkaConsumer, KafkaProducer
 from stats_info import StatsInfo
@@ -25,13 +30,20 @@ from flow_info import FlowInfo
 from byte_codec import ByteCodec
 from util import get_size
 
+logger = logging.getLogger('logger')
+logger.setLevel(logging.INFO)
+file_handler = logging.FileHandler('daemon.log')
+file_handler.setLevel(logging.INFO)
+logger.addHandler(file_handler)
+
 CONSUMER_BOOTSTRAP_SERVERS = '10.107.16.149:9092'
 PRODUCER_BOOTSTRAP_SERVERS = '10.107.16.149:9092'
 
 PRODUCER_API_VERSION = (0, 8, 2)
 
 CONSUMER_KEY = ['voltha.kpis']
-PRODUCER_KEY = 'tidc.data.flow'
+PRODUCER_TOPIC = 'tidc.data.flow'
+PRODUCER_KEY = 'flowdata'
 
 EXPORT_INTERVAL_SECOND = 5
 
@@ -70,7 +82,7 @@ class Consumer(threading.Thread):
 
     def print_metrics(self, caption, tx_pkt_num, rx_pkt_num):
         result = caption + ' TX: ' + str(tx_pkt_num) + ' RX: ' + str(rx_pkt_num)
-        print (result)
+        logger.info(result)
 
     def print_size(self, caption, metrics_bytes):
         print (caption + str(get_size(metrics_bytes)))
@@ -142,7 +154,7 @@ class Producer(threading.Thread):
 
     def metrics_to_bytes(self, metrics_key, metrics_value):
         si = StatsInfo()
-        si.lstPktOffset = 5000
+        si.lstPktOffset = EXPORT_INTERVAL_SECOND * 1000
         si.currAccPkts = metrics_value["currAccPkts"]
         si.prevAccPkts = metrics_value["prevAccPkts"]
         si.currAccBytes = metrics_value["currAccBytes"]
@@ -173,16 +185,17 @@ class Producer(threading.Thread):
                                  api_version=PRODUCER_API_VERSION,
                                  linger_ms=LINGER_MS_CONFIG,
                                  retry_backoff_ms=RETRY_BACKOFF_MS_CONFIG,
-                                 reconnect_backoff_ms=RECONNECT_BACKOFF_MS_CONFIG)
+                                 reconnect_backoff_ms=RECONNECT_BACKOFF_MS_CONFIG,
+                                 key_serializer=str.encode)
 
         while not self.stop_event.is_set():
             if not Metrics.metrics:
-                print ("Nothing to publish...")
+                logger.info("Nothing to publish...")
             else:
                 for key, value in Metrics.metrics.items():
                     metrics = self.metrics_to_bytes(key, value)
-                    producer.send(PRODUCER_KEY, metrics)
-                    print ("Metrics for " + key + " was published!")
+                    producer.send(PRODUCER_TOPIC, key=PRODUCER_KEY, value=metrics)
+                    logger.info("Metrics for " + key + " was published!")
 
             time.sleep(EXPORT_INTERVAL_SECOND)
 
@@ -197,10 +210,12 @@ def main():
     for t in tasks:
         t.start()
 
-if __name__ == "__main__":
-    logging.basicConfig(
-        format='%(asctime)s.%(msecs)s:%(name)s:%(thread)d:%(levelname)s:%(process)d:%(message)s',
-        level=logging.WARN
-        )
-    main()
+def start_daemon():
+    with daemon.DaemonContext(
+        working_directory='./',
+        pidfile=pidfile.TimeoutPIDLockFile('daemon.pid'),
+        ) as context:
+        main()
 
+if __name__ == "__main__":
+    main()
